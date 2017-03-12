@@ -5,33 +5,30 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
 
-	private static int serverPort;   //The server will be listening on this port number
+	private static int serverPort;   
 	private static ServerSocket serverSocket;
 	private static ConcurrentHashMap<String, ObjectOutputStream> connMap; 
-	private static ObjectInputStream in;	//stream read from the socket
-    private static ObjectOutputStream out;    //stream write to the socket
+	private static ObjectInputStream in;	
+    	private static ObjectOutputStream out;    
     
-    public static void main(String[] args) throws Exception {
+    	public static void main(String[] args) throws Exception {
 		System.out.println("The server is running."); 
 		serverPort = Integer.parseInt(args[0]);
-        serverSocket = new ServerSocket(serverPort);
-        connMap = new ConcurrentHashMap<String, ObjectOutputStream>(); 
+        	serverSocket = new ServerSocket(serverPort);
+        	connMap = new ConcurrentHashMap<String, ObjectOutputStream>(); 
 	    	try {
             		while(true) {
-						Socket connection = serverSocket.accept();
-						out = new ObjectOutputStream(connection.getOutputStream());
-						out.flush();
-						in = new ObjectInputStream(connection.getInputStream());
-						new ReceivingThread(out,in).start();
-	        			}
-        	} catch(SocketException e){
-        		
+					Socket connection = serverSocket.accept();
+					out = new ObjectOutputStream(connection.getOutputStream());
+					out.flush();
+					in = new ObjectInputStream(connection.getInputStream());
+					new ReceivingThread(out,in).start();
+	        		}
+        	} catch(SocketException e){	
         	}finally {
             		serverSocket.close();
         	} 
- 
-    	}
-
+     	}
 	/**
      	* A handler thread class.  Handlers are spawned from the listening
      	* loop and are responsible for dealing with a single client's requests.
@@ -42,7 +39,7 @@ public class Server {
 		private String clientId;
 		private MessageBean clientBean;
 		
-        public MessageBean getClientBean() {
+        	public MessageBean getClientBean() {
 			return clientBean;
 		}
 
@@ -58,9 +55,9 @@ public class Server {
 				}catch(Exception e){e.printStackTrace();}
         	}
 
-        public void run() {
- 		try{
-			//initialize Input and Output streams
+        	public void run() {
+ 			try{
+				//initialize Input and Output streams
 				while(true)
 				{
 					//receive the message sent from the client
@@ -74,35 +71,31 @@ public class Server {
 						new SendingThread(out,in,clientBean).start();						
 					}	
 				}
- 		}catch(IOException e){
-			//e.printStackTrace();
-			try{
-				System.out.println("Disconnect with Client " + clientId );
-				connMap.remove(clientId,out);
-				in.close();
-				out.flush();
-				out.close();
+ 			}catch(IOException e){
+				try{
+					System.out.println("Disconnect with Client " + clientId );
+					connMap.remove(clientId,out);
+					in.close();
+					out.flush();
+					out.close();
+				}catch(IOException ioException){
+					System.out.println("Disconnect with Client " +clientId);
+					ioException.printStackTrace();
+				}
+			}catch(ClassNotFoundException e){
+ 				try{
+					System.out.println("Disconnect with Client " + clientId );
+					connMap.remove(clientId,out);
+					in.close();
+					out.flush();
+					out.close();
+				}catch(IOException ioException){
+					System.out.println("Disconnect with Client " + clientId );
+					ioException.printStackTrace();
+				}
 			}
-			catch(IOException ioException){
-				System.out.println("Disconnect with Client " +clientId);
-				ioException.printStackTrace();
-			}
-		}catch(ClassNotFoundException e){
- 			//e.printStackTrace();
-			try{
-				System.out.println("Disconnect with Client " + clientId );
-				connMap.remove(clientId,out);
-				in.close();
-				out.flush();
-				out.close();
-			}
-			catch(IOException ioException){
-				System.out.println("Disconnect with Client " + clientId );
-				ioException.printStackTrace();
-			}
-		}
  		
-	}
+		}
     }
     	
     	private static class SendingThread extends Thread {
@@ -111,7 +104,7 @@ public class Server {
     	
     		private MessageBean clientBean;
     		
-            public MessageBean getClientBean() {
+           	public MessageBean getClientBean() {
     			return clientBean;
     		}
 
@@ -124,11 +117,11 @@ public class Server {
     				this.out = out;
     				this.out.flush();
     				this.in = in;
-    	    		this.clientBean = clBean;
+    	    			this.clientBean = clBean;
               		}catch(Exception e){e.printStackTrace();}
             	}
 
-            public void run() {
+            	public void run() {
      		try{
     				Set<String> clients = connMap.keySet();
     				if(clientBean.getMessageMode().equalsIgnoreCase("broadcast")){
@@ -139,32 +132,30 @@ public class Server {
     							tempout.flush();
     						}
     					}
-						String messageContent = (clientBean.isFile())?"file" : "message";
-						System.out.println(clientBean.getMessageMode()+" "+messageContent+" sent by Client " + clientBean.getClientID());
-    				
+					String messageContent = (clientBean.isFile())?"file" : "message";
+					System.out.println(clientBean.getMessageMode()+" "+messageContent+" sent by Client " + clientBean.getClientID());
     				}else if(this.clientBean.getMessageMode().equalsIgnoreCase("unicast")){
     					ObjectOutputStream tempout = connMap.get(getClientBean().getClientList().get(0));
-						if(tempout!=null){
-							tempout.writeObject(getClientBean());
-							tempout.flush();
-							String messageContent = (clientBean.isFile())?"file" : "message";
-							System.out.println(clientBean.getMessageMode()+" "+messageContent+" sent by Client " + clientBean.getClientID()+" to "+clientBean.getClientList());
-						}
-					}else if(this.clientBean.getMessageMode().equalsIgnoreCase("blockcast")){
+					if(tempout!=null){
+						tempout.writeObject(getClientBean());
+						tempout.flush();
+						String messageContent = (clientBean.isFile())?"file" : "message";
+						System.out.println(clientBean.getMessageMode()+" "+messageContent+" sent by Client " + clientBean.getClientID()+" to "+clientBean.getClientList());
+					}
+				}else if(this.clientBean.getMessageMode().equalsIgnoreCase("blockcast")){
     					for(String client: clients){
     						if(!client.equalsIgnoreCase(getClientBean().getClientID()) && !(getClientBean().getClientList().contains(client))){
     							ObjectOutputStream tempout = connMap.get(client);
     							tempout.writeObject(getClientBean());
     							tempout.flush();
     						}
-						}
-						String messageContent = (clientBean.isFile())?"file" : "message";
-						System.out.println(clientBean.getMessageMode()+" "+messageContent+" sent by Client " + clientBean.getClientID()+" except "+clientBean.getClientList());
-    				
 					}
+					String messageContent = (clientBean.isFile())?"file" : "message";
+					System.out.println(clientBean.getMessageMode()+" "+messageContent+" sent by Client " + clientBean.getClientID()+" except "+clientBean.getClientList());
+    				}
     			}catch(IOException e){
     				System.out.println("Disconnect with Client " + clientBean.getClientID() );
-					e.printStackTrace();
+				e.printStackTrace();
     				try{
     					connMap.remove(clientBean.getClientID(),out);
     					in.close();
@@ -172,7 +163,7 @@ public class Server {
     					out.close();
     				}catch(IOException ioException){
     					System.out.println("Disconnect with Client " + clientBean.getClientID() );
-						ioException.printStackTrace();
+					ioException.printStackTrace();
     				}
     			}
      	   	}
